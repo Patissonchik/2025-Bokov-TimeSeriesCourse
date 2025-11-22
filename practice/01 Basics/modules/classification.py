@@ -1,7 +1,8 @@
 import numpy as np
 
+from typing import Self
 from modules.metrics import *
-from modules.utils import z_normalize
+from modules.utils import *
 
 
 default_metrics_params = {'euclidean': {'normalize': True},
@@ -63,9 +64,22 @@ class TimeSeriesKNN:
         dist: distance between the train and test samples
         """
 
-        dist = 0
+        # Нормализация, если включена в параметрах
+        if self.metric_params.get('normalize', False):
+            x_train = z_normalize(x_train)
+            x_test = z_normalize(x_test)
 
-        # INSERT YOUR CODE
+        # Выбор метрики
+        if self.metric == 'euclidean':
+            dist = ED_distance(x_train, x_test)
+
+        elif self.metric == 'dtw':
+            # r — доля длины ряда для окна выравнивания
+            r = self.metric_params.get('r', None)
+            dist = DTW_distance(x_train, x_test, r)
+
+        else:
+            raise ValueError(f"Unknown metric: {self.metric}")
 
         return dist
 
@@ -83,9 +97,16 @@ class TimeSeriesKNN:
         neighbors: k nearest neighbors (distance between neighbor and test sample, neighbor label) for test sample
         """
 
-        neighbors = []
+        neighbors: list[tuple[float, int]] = []
 
-        # INSERT YOUR CODE
+        # считаем расстояние до каждого обучающего ряда
+        for xi, yi in zip(self.X_train, self.Y_train):
+            d = self._distance(xi, x_test)
+            neighbors.append((d, yi))
+
+        # сортируем по расстоянию и берём k ближайших
+        k = min(self.n_neighbors, len(neighbors))
+        neighbors = sorted(neighbors, key=lambda x: x[0])[:k]
 
         return neighbors
 
@@ -105,7 +126,14 @@ class TimeSeriesKNN:
 
         y_pred = []
 
-        # INSERT YOUR CODE
+        for x_test in X_test:
+            neighbors = self._find_neighbors(x_test)
+            neighbor_labels = [lab for _, lab in neighbors]
+
+          
+            values, counts = np.unique(neighbor_labels, return_counts=True)
+            pred_label = values[np.argmax(counts)]
+            y_pred.append(pred_label)
 
         return np.array(y_pred)
 

@@ -31,11 +31,23 @@ class Image2TimeSeries:
         -------
         prep_img: image after preprocessing
         """
-
-        # INSERT YOUR CODE
-
+        # если картинка цветная — сделаем серой
+        if len(img.shape) == 3:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = img.copy()
+    
+        # инвертируем цвета (объект будет белым на чёрном)
+        inv = cv2.bitwise_not(gray)
+    
+        # лёгкое размытие
+        blur = cv2.GaussianBlur(inv, (5, 5), 0)
+    
+        # пороговая обработка (бинаризация)
+        _, prep_img = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    
         return prep_img
-
+    
 
     def _get_contour(self, img: np.ndarray) -> np.ndarray:
         """
